@@ -62,11 +62,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: swagger-json
+          path: /tmp/swagger
 
       - name: Checkout repository
         uses: actions/checkout@v4.2.2
-        with:
-          ref: main
 
       - name: Push Swagger JSON to swagger branch
         run: |
@@ -74,7 +73,7 @@ jobs:
           git config user.email "actions@github.com"
           git checkout -b swagger || git checkout swagger
           mkdir -p docs/assets
-          cp ../swagger.json docs/assets/swagger.json
+          cp /tmp/swagger/swagger.json docs/assets/swagger.json
           git add docs/assets/swagger.json
           git commit -m "Update Swagger JSON [skip ci]" || echo "No changes"
           git push -f origin swagger
