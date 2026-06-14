@@ -51,3 +51,6 @@ jobs:
             docker compose pull citrine
             docker compose up -d citrine
             docker image prune -f
+            # Re-apply Hasura metadata after deploy (new DB migrations may add tables)
+            sleep 10
+            hasura metadata apply --project ~/citrineos-core/apps/Server --skip-update-check
