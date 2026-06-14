@@ -5,7 +5,7 @@
 
 _OCPP_VERSION=$OCPP_VERSION
 OCPP_VERSION_ENUM="OCPP201"
-EVEREST_TARGET_URL="ws://host.docker.internal:8081/cp001"
+EVEREST_TARGET_URL="${EVEREST_TARGET_URL:-ws://host.docker.internal:8081/cp001}"
 
 case "$_OCPP_VERSION" in
   "1.6")

@@ -31,10 +31,9 @@ services:
       - MQTT_SERVER_ADDRESS=mqtt-server
       - EVEREST_IMAGE_TAG=${EVEREST_IMAGE_TAG}
       - OCPP_VERSION=${OCPP_VERSION}
+      - EVEREST_TARGET_URL=ws://65.0.157.6:8081/cp001
     sysctls:
       - net.ipv6.conf.all.disable_ipv6=0
-    extra_hosts:
-      - 'host.docker.internal:host-gateway'
     networks:
       - everest_net
 
