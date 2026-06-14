@@ -54,6 +54,8 @@ jobs:
     needs: build
     if: needs.build.outputs.swagger_valid == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Download Swagger Artifact
@@ -61,20 +63,18 @@ jobs:
         with:
           name: swagger-json
 
-      - name: Checkout citrineos.github.io
-        uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4.2.2
         with:
-          repository: citrineos/citrineos.github.io
-          ssh-key: ${{ secrets.CITRINEOS_GITHUB_IO_DEPLOY_KEY }}
-          path: citrineos.github.io
+          ref: main
 
-      - name: Push Swagger JSON
+      - name: Push Swagger JSON to swagger branch
         run: |
-          cd citrineos.github.io
-          git checkout -b swagger-updates || git checkout swagger-updates
-          cp ../swagger.json ./docs/assets
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git add ./docs/assets/swagger.json
-          git commit -m "Update Swagger JSON from PR"
-          git push -f origin swagger-updates --verbose
+          git checkout -b swagger || git checkout swagger
+          mkdir -p docs/assets
+          cp ../swagger.json docs/assets/swagger.json
+          git add docs/assets/swagger.json
+          git commit -m "Update Swagger JSON [skip ci]" || echo "No changes"
+          git push -f origin swagger
