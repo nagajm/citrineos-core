@@ -18,6 +18,18 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 2
+
+      - name: Check for migration changes
+        id: migration-check
+        run: |
+          CHANGED=$(git diff HEAD^ HEAD --name-only -- apps/Server/migrations/ 2>/dev/null | wc -l)
+          if [ "$CHANGED" -gt 0 ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -41,13 +53,22 @@ jobs:
 
       - name: Deploy to server
         uses: appleboy/ssh-action@v1
+        env:
+          MIGRATIONS_CHANGED: ${{ steps.migration-check.outputs.changed }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: MIGRATIONS_CHANGED
           script: |
             cd ~/citrineos-core
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             docker compose pull citrine
+            if [ "$MIGRATIONS_CHANGED" = "true" ]; then
+              echo "Migration files changed - running db:migrate"
+              export DB_STRATEGY=migrate
+            else
+              echo "No migration changes - skipping db:migrate"
+            fi
             docker compose up -d citrine
             docker image prune -f
