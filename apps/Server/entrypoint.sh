@@ -11,10 +11,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 if [ "$DB_STRATEGY" = "migrate" ]; then
     (cd "$SCRIPT_DIR" && pnpm run migrate)
 else
-    echo "Unknown DB_STRATEGY: $DB_STRATEGY. Defaulting to migrate."
-    (cd "$SCRIPT_DIR" && pnpm run migrate)
+    echo "Skipping migrations (DB_STRATEGY=$DB_STRATEGY)"
 fi
 
 echo "Starting application..."
 exec node "$SCRIPT_DIR/dist/index.js"
-
