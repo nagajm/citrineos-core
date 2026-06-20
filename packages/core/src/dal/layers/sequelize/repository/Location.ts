@@ -310,10 +310,15 @@ export class SequelizeLocationRepository
       const [savedConnector, connectorCreated] = await this.connector.readOrCreateByQuery(
         tenantId,
         {
+          // Key the connector by evseId too when it is known, so a multi-EVSE station whose EVSEs
+          // each use connectorId 1 gets a distinct Connector per EVSE instead of collapsing into
+          // one. Both the 1.6 and 2.0.1 StatusNotification handlers set connector.evseId; if it is
+          // absent we fall back to the legacy (ocppConnectionName, connectorId) lookup.
           where: {
             tenantId,
             ocppConnectionName: connector.ocppConnectionName,
             connectorId: connector.connectorId,
+            ...(connector.evseId != null ? { evseId: connector.evseId } : {}),
           },
           defaults: {
             ...connector,

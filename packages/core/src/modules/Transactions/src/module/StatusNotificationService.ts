@@ -68,9 +68,18 @@ export class StatusNotificationService {
         statusNotification,
       );
 
+      // Map the OCPP evseId (the per-station EVSE serial, also stored as Evse.evseTypeId) to the
+      // Evse database id. Without this the connector is keyed only by (stationId, connectorId), so
+      // two EVSEs that each call their connector "1" collapse into a single Connector row. Setting
+      // evseId here (and including it in the upsert lookup) gives each EVSE its own connector.
+      const matchingEvse = chargingStation.evses?.find(
+        (evse) => evse.evseTypeId === statusNotificationRequest.evseId,
+      );
+
       const connector = {
         tenantId,
         connectorId: statusNotificationRequest.connectorId,
+        evseId: matchingEvse?.id,
         ocppConnectionName: ocppConnectionName,
         status: OCPP2_0_1_Mapper.LocationMapper.mapConnectorStatus(
           statusNotificationRequest.connectorStatus,
