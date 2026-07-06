@@ -83,7 +83,8 @@
         "Remote",
         "SoftReset",
         "UnlockCommand",
-        "DeAuthorized"
+        "DeAuthorized",
+        "NoLoad"
       ],
       "tsEnumNames": [
         "EmergencyStop",
@@ -96,7 +97,8 @@
         "Remote",
         "SoftReset",
         "UnlockCommand",
-        "DeAuthorized"
+        "DeAuthorized",
+        "NoLoad"
       ]
     },
     "StopTransactionRequestContext": {

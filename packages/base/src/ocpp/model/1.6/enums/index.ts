@@ -403,6 +403,8 @@ export enum StopTransactionRequestReason {
   SoftReset = 'SoftReset',
   UnlockCommand = 'UnlockCommand',
   DeAuthorized = 'DeAuthorized',
+  // Vendor extension (Bolt.Earth ESP32-OCPP-v1 firmware) — not in the official OCPP 1.6 spec.
+  NoLoad = 'NoLoad',
 }
 
 export enum StopTransactionRequestUnit {
