@@ -230,7 +230,58 @@ export abstract class AbstractMessageRouter implements IMessageRouter {
         return { isValid: false };
     }
 
-    return this._ocppValidator.validateOCPPRequest(action, payload, protocolEnum);
+    const validationPayload = this._getPayloadForSchemaValidation(identifier, action, payload);
+
+    return this._ocppValidator.validateOCPPRequest(action, validationPayload, protocolEnum);
+  }
+
+  /**
+   * Some chargers send otherwise well-formed OCPP calls with non-standard enum values in
+   * known fields (a vendor extension of a standard field, not a malformed message). Rejecting
+   * the whole call for that reason means we never learn the real event happened (e.g. a
+   * transaction never gets marked stopped). For known cases, substitute a schema-valid
+   * placeholder value *only* for schema validation — the original payload (with the
+   * charger's real value) is untouched and still flows through to routing/persistence, so
+   * nothing is lost or misrepresented.
+   *
+   * Known non-standard values, by action and field, discovered so far:
+   * - StopTransaction.reason: 'NoLoad' (Bolt.Earth ESP32-OCPP-v1 firmware, seen on station
+   *   L1OC1411 2026-07-06) — not in the OCPP 1.6 StopTransactionRequestReason enum.
+   */
+  private static readonly KNOWN_NONSTANDARD_ENUM_VALUES: Record<
+    string,
+    Record<string, Set<string>>
+  > = {
+    StopTransaction: {
+      reason: new Set(['NoLoad']),
+    },
+  };
+
+  private _getPayloadForSchemaValidation(
+    identifier: string,
+    action: CallAction,
+    payload: OcppRequest,
+  ): OcppRequest {
+    const fieldMap = AbstractMessageRouter.KNOWN_NONSTANDARD_ENUM_VALUES[action as string];
+    if (!fieldMap || !payload || typeof payload !== 'object') {
+      return payload;
+    }
+
+    let normalized: any = payload;
+    for (const [field, knownValues] of Object.entries(fieldMap)) {
+      const value = (payload as any)[field];
+      if (typeof value === 'string' && knownValues.has(value)) {
+        if (normalized === payload) {
+          normalized = { ...(payload as any) };
+        }
+        this._logger.warn(
+          `Non-standard value '${value}' for ${action}.${field} from ${identifier}; ` +
+            `accepting as known vendor extension (schema-validating as 'Other')`,
+        );
+        normalized[field] = 'Other';
+      }
+    }
+    return normalized;
   }
 
   /**
