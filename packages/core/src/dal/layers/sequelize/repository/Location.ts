@@ -148,6 +148,18 @@ export class SequelizeLocationRepository
     const evseId = statusNotification.evseId;
     const connectorId = statusNotification.connectorId;
     const statusNotificationId = statusNotification.id;
+    // OCPP 1.6 has no evseId on the wire; CitrineOS derives it internally and can resolve
+    // it inconsistently for the same physical connector (e.g. null on the very first
+    // StatusNotification right after BootNotification, before the Evse/Connector records
+    // exist, then a real value on later messages). Matching evseId exactly would leave the
+    // earlier entry orphaned instead of replaced. Treat a null evseId (on either side) as a
+    // wildcard so the stale entry is still found. OCPP 2.x/2.1 always populate evseId, so
+    // this never loosens matching for multi-EVSE stations where the same connectorId
+    // legitimately exists under different EVSEs.
+    const statusNotificationWhere: Record<string, any> = { connectorId };
+    if (evseId !== null && evseId !== undefined) {
+      statusNotificationWhere[Op.or as any] = [{ evseId: null }, { evseId }];
+    }
     // delete operation doesn't support "include" in query
     // so we need to find them at first and then delete
     const existingLatestStatusNotifications: LatestStatusNotification[] =
@@ -158,10 +170,7 @@ export class SequelizeLocationRepository
         include: [
           {
             model: StatusNotification,
-            where: {
-              evseId,
-              connectorId,
-            },
+            where: statusNotificationWhere,
             require: true,
           },
         ],
