@@ -79,6 +79,7 @@ import {
   UnknownStationFilter,
   WebhookDispatcher,
   WebsocketNetworkConnection,
+  ZappoRfidPricingAuthorizer,
 } from '@citrineos/core';
 import cors from '@fastify/cors';
 import { type JsonSchemaToTsProvider } from '@fastify/type-provider-json-schema-to-ts';
@@ -624,7 +625,7 @@ export class CitrineOSServer {
       this._repositoryStore.locationRepository,
       this._certificateAuthorityService,
       this._realTimeAuthorizer,
-      [],
+      [new ZappoRfidPricingAuthorizer(this._config, this._logger)],
       this._idGenerator,
     );
     await this.initHandlersAndAddModule(module);
