@@ -6,12 +6,14 @@ import type {
   AuthorizationDto,
   AuthorizationStatusEnumType,
   BootstrapConfig,
+  IAuthorizer,
   IMessageContext,
 } from '@citrineos/base';
-import { AuthorizationStatusEnum, IAuthorizer } from '@citrineos/base';
+import { AuthorizationStatusEnum } from '@citrineos/base';
 import { DefaultSequelizeInstance } from '@dal/index.js';
 import { QueryTypes } from 'sequelize';
-import { Logger, ILogObj } from 'tslog';
+import { Logger } from 'tslog';
+import type { ILogObj } from 'tslog';
 
 interface RfidTagRow {
   id: string;
@@ -50,13 +52,13 @@ interface WalletRow {
  */
 export class ZappoRfidPricingAuthorizer implements IAuthorizer {
   private readonly logger: Logger<ILogObj>;
+  private readonly config: BootstrapConfig;
 
   constructor(config: BootstrapConfig, logger?: Logger<ILogObj>) {
+    this.config = config;
     this.logger = logger
       ? logger.getSubLogger({ name: this.constructor.name })
       : new Logger<ILogObj>({ name: this.constructor.name });
-    // Ensures the shared connection is initialized; harmless if already created elsewhere.
-    DefaultSequelizeInstance.getInstance(config, this.logger);
   }
 
   async authorize(
@@ -64,7 +66,10 @@ export class ZappoRfidPricingAuthorizer implements IAuthorizer {
     context: IMessageContext,
   ): Promise<AuthorizationStatusEnumType> {
     const currentStatus = authorization.status as AuthorizationStatusEnumType;
-    const sequelize = DefaultSequelizeInstance.getInstance();
+    // getInstance requires config on every call, but only actually creates a new
+    // connection the first time — subsequent calls (including from other modules)
+    // just return the already-initialized shared instance.
+    const sequelize = DefaultSequelizeInstance.getInstance(this.config, this.logger);
 
     let tag: RfidTagRow | undefined;
     try {
