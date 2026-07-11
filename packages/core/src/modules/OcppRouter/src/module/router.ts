@@ -48,6 +48,7 @@ import type { ILogObj } from 'tslog';
 import { Logger } from 'tslog';
 import { v4 as uuidv4 } from 'uuid';
 import { WebhookDispatcher } from './webhook.dispatcher.js';
+import { preprocessMeterValues } from './vendorAdapters/meterValuesPreprocessor.js';
 
 /**
  * Implementation of the ocpp router
@@ -217,6 +218,17 @@ export class MessageRouterImpl extends AbstractMessageRouter implements IMessage
       messageId = rpcMessage[1];
       switch (messageTypeId) {
         case MessageTypeId.Call: {
+          // Per-vendor adaptor layer — only touches traffic from known non-standard vendors
+          // (see vendorAdapters/vendorRegistry.ts KNOWN_VENDOR_IDS); every other station's
+          // messages pass through completely untouched. Must run before _onCall so the
+          // cleaned-up payload is what every downstream consumer (validation, queue, modules)
+          // ever sees, rather than patching validation at each of several checkpoints.
+          await preprocessMeterValues(
+            rpcMessage as Call,
+            ocppConnectionName,
+            this._config as unknown as BootstrapConfig,
+            this._logger,
+          );
           await this._onCall(identifier, rpcMessage as Call, timestamp, protocol);
           break;
         }

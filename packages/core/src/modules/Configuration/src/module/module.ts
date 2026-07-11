@@ -73,6 +73,8 @@ import { Logger } from 'tslog';
 import { v4 as uuidv4 } from 'uuid';
 import { BootNotificationService } from './BootNotificationService.js';
 import { DeviceModelService } from './DeviceModelService.js';
+import { handleBoltDataTransfer } from './vendorAdapters/boltDataTransfer.js';
+import { KNOWN_VENDOR_IDS } from '../../../OcppRouter/src/module/vendorAdapters/vendorRegistry.js';
 
 /**
  * Component that handles Configuration related messages.
@@ -1109,6 +1111,26 @@ export class ConfigurationModule extends AbstractModule {
     this._logger.debug('DataTransfer received:', message, props);
 
     if (message.state === MessageState.Request) {
+      const request = message.payload as OCPP1_6.DataTransferRequest;
+
+      // Known non-standard vendors get their diagnostics captured instead of a blanket
+      // rejection; every other vendorId keeps the original, unmodified Rejected behavior.
+      if (request.vendorId && KNOWN_VENDOR_IDS.has(request.vendorId)) {
+        await handleBoltDataTransfer(
+          message.context.ocppConnectionName,
+          request.vendorId,
+          request.data ?? undefined,
+          this._config as unknown as BootstrapConfig,
+          this._logger,
+        );
+        const accepted: OCPP1_6.DataTransferResponse = {
+          status: OCPP1_6.DataTransferResponseStatus.Accepted,
+        };
+        const confirmation = await this.sendCallResultWithMessage(message, accepted);
+        this._logger.debug('DataTransfer (known vendor) response sent: ', confirmation);
+        return;
+      }
+
       // Create response
       const response: OCPP1_6.DataTransferResponse = {
         status: OCPP1_6.DataTransferResponseStatus.Rejected,
