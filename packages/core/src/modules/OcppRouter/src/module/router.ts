@@ -49,6 +49,7 @@ import { Logger } from 'tslog';
 import { v4 as uuidv4 } from 'uuid';
 import { WebhookDispatcher } from './webhook.dispatcher.js';
 import { preprocessMeterValues } from './vendorAdapters/meterValuesPreprocessor.js';
+import { preprocessStartTransaction } from './vendorAdapters/startTransactionPreprocessor.js';
 
 /**
  * Implementation of the ocpp router
@@ -224,6 +225,12 @@ export class MessageRouterImpl extends AbstractMessageRouter implements IMessage
           // cleaned-up payload is what every downstream consumer (validation, queue, modules)
           // ever sees, rather than patching validation at each of several checkpoints.
           await preprocessMeterValues(
+            rpcMessage as Call,
+            ocppConnectionName,
+            this._config as unknown as BootstrapConfig,
+            this._logger,
+          );
+          await preprocessStartTransaction(
             rpcMessage as Call,
             ocppConnectionName,
             this._config as unknown as BootstrapConfig,
