@@ -64,4 +64,4 @@ jobs:
               -H "x-hasura-admin-secret: $HASURA_ADMIN_SECRET" \
               -d '{"type":"reload_metadata","args":{"reload_remote_schemas":true}}'
 
-            docker image prune -f
+            docker image prune -f || true
