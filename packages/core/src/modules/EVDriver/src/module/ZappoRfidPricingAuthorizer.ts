@@ -16,7 +16,7 @@ import { Logger } from 'tslog';
 import type { ILogObj } from 'tslog';
 
 interface RfidTagRow {
-  id: string;
+  id: number;
   operatorId: string | null;
   linkedDriverId: string | null;
   isActive: boolean;
