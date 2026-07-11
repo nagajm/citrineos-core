@@ -17,13 +17,13 @@ import type { ILogObj } from 'tslog';
 
 interface RfidTagRow {
   id: number;
-  operatorId: string | null;
+  operatorId: number | null;
   linkedDriverId: string | null;
   isActive: boolean;
 }
 
 interface StationOperatorRow {
-  operatorId: string;
+  operatorId: number;
   minStartBalance: string;
   pricePerKwh: string;
 }
@@ -107,7 +107,7 @@ export class ZappoRfidPricingAuthorizer implements IAuthorizer {
          JOIN operators o ON sa."operatorId"::text = o.id::text
          LEFT JOIN LATERAL (
            SELECT "pricePerKwh" FROM price_history
-           WHERE "operatorId" = sa."operatorId"::text
+           WHERE "operatorId" = sa."operatorId"
            ORDER BY "effectiveFrom" DESC LIMIT 1
          ) ph ON true
          WHERE cs."ocppConnectionName" = :ocppConnectionName
